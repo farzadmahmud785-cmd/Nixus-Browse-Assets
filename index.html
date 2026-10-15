@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nixus Browse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent-color: #007acc;
+            --accent-text-color: #ffffff;
+            --bg-color: #1e1e1e;
+            --panel-bg: #252526;
+            --modal-bg: rgba(37, 37, 38, 0.85);
+            --modal-border: #444444;
+            --modal-item-bg: rgba(45, 45, 45, 0.7);
+            --text-color: #ffffff;
+            --subtext-color: #aaaaaa;
+            --border-color: #333333;
+            --toolbar-bg: #2d2d2d;
+            --input-bg: #1e1e1e;
+            --tab-bg: #252526;
+            --icon-color: #ffffff;
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+        }
+
+        body.light-mode {
+            --bg-color: #f0f0f0;
+            --panel-bg: #ffffff;
+            --modal-bg: rgba(255, 255, 255, 0.9);
+            --modal-border: #cccccc;
+            --modal-item-bg: rgba(245, 245, 245, 0.8);
+            --text-color: #1e1e1e;
+            --subtext-color: #555555;
+            --border-color: #cccccc;
+            --toolbar-bg: #e0e0e0;
+            --input-bg: #ffffff;
+            --tab-bg: #e0e0e0;
+            --icon-color: #1e1e1e;
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        /* CUSTOM THEME-AWARE SCROLLBARS */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Top Tab Bar Layout */
+        #tabBar {
+            display: flex;
+            background: var(--tab-bg);
+            padding: 6px 6px 0 6px;
+            gap: 4px;
+            border-bottom: 1px solid var(--border-color);
+            height: 38px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .new-tab-btn {
+            -webkit-appearance: none;
+            appearance: none;
+            background: none;
+            border: none;
+            color: var(--subtext-color);
+            cursor: pointer;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 2px;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .new-tab-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--icon-color);
+        }
+
+        .new-tab-btn:hover {
+            background: rgba(128,128,128,0.3);
+            transform: scale(1.1);
+        }
+
+        #tabsContainer {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            flex: 0 1 auto;
+            scroll-behavior: smooth;
+            align-items: flex-end;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+
+        #tabsContainer::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            background: var(--toolbar-bg);
+            padding: 0 10px 0 12px;
+            font-size: 13px;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--subtext-color);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            min-width: 130px;
+            max-width: 180px;
+            flex-shrink: 0;
+            height: 32px;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                        opacity 0.2s ease, 
+                        transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                        padding 0.25s ease;
+        }
+
+        .tab.tab-opening {
+            animation: smoothSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes smoothSlideIn {
+            0% {
+                max-width: 0;
+                opacity: 0;
+                transform: translateY(6px);
+                padding-left: 0;
+                padding-right: 0;
+            }
+            100% {
+                max-width: 180px;
+                opacity: 1;
+                transform: translateY(0);
+                padding-left: 12px;
+                padding-right: 10px;
+            }
+        }
+
+        .tab.closing {
+            max-width: 0 !important;
+            opacity: 0 !important;
+            transform: translateY(6px);
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            border-color: transparent !important;
+            pointer-events: none;
+        }
+
+        .tab span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tab.active {
+            background: var(--bg-color);
+            color: var(--text-color);
+            border-color: var(--accent-color);
+            border-bottom: 1px solid var(--bg-color);
+            z-index: 2;
+            box-shadow: 0 -2px 10px var(--accent-color);
+        }
+
+        .tab.active::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0; right: 0;
+            height: 2px;
+            background: var(--accent-color);
+            border-radius: 6px 6px 0 0;
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        .tab-close {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            min-height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-left: auto;
+            color: var(--subtext-color);
+            transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+        }
+
+        #tabsContainer.single-tab .tab-close {
+            display: none !important;
+        }
+
+        .tab-close svg {
+            width: 10px;
+            height: 10px;
+            fill: var(--subtext-color);
+        }
+
+        .tab-close:hover {
+            background: rgba(128,128,128,0.4);
+            transform: scale(1.15);
+        }
+
+        .tab-close:hover svg {
+            fill: var(--text-color);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--toolbar-bg);
+            border-bottom: 1px solid var(--border-color);
+            gap: 8px;
+            height: 44px;
+            position: relative;
+        }
+
+        .nav-btn, .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 6px 9px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+
+        .nav-btn svg, .action-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--icon-color);
+            opacity: 0.85;
+        }
+
+        .nav-btn:hover, .action-btn:hover {
+            background: rgba(128,128,128,0.2);
+            transform: translateY(-1px);
+        }
+
+        .nav-btn:hover svg, .action-btn:hover svg {
+            opacity: 1;
+        }
+
+        .address-bar-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .address-bar {
+            width: 100%;
+            padding: 6px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            color: var(--text-color);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .address-bar:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-color);
+        }
+
+        /* SEARCH SUGGESTIONS DROPDOWN */
+        #suggestionsDropdown {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: 0;
+            background: var(--modal-bg);
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
+            z-index: 3000;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+
+        #suggestionsDropdown.show {
+            display: flex;
+        }
+
+        .suggestion-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--modal-border);
+            transition: background 0.15s ease;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(128, 128, 128, 0.25);
+        }
+
+        .suggestion-item svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--subtext-color);
+            flex-shrink: 0;
+        }
+
+        /* EXTENSIONS DROPDOWN PANEL */
+        #extensionsDropdownPanel {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            width: 300px;
+            background: var(--modal-bg);
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 0 20px var(--accent-color), 0 10px 30px rgba(0,0,0,0.6);
+            border-radius: 14px;
+            display: none;
+            flex-direction: column;
+            z-index: 2000;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transform: translateY(-8px) scale(0.96);
+            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #extensionsDropdownPanel.show {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        #extBadgeCount {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--accent-color);
+            color: var(--accent-text-color);
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 50%;
+            display: none;
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        /* LOADING GLOW BAR */
+        #loadingGlowBar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            width: 0%;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+            transition: width 0.3s ease, opacity 0.2s ease;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+            background: var(--bg-color);
+        }
+
+        webview {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        webview.active {
+            display: flex;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            display: flex;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-dialog {
+            background: var(--modal-bg);
+            color: var(--text-color);
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 0 20px var(--accent-color), 0 10px 30px rgba(0,0,0,0.5);
+            padding: 24px;
+            border-radius: 14px;
+            width: 480px;
+            min-height: 410px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.open .modal-dialog {
+            transform: scale(1);
+        }
+
+        .modal-dialog h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--modal-border);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-color);
+        }
+
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .list-item {
+            background: var(--modal-item-bg);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--modal-border);
+            gap: 10px;
+        }
+
+        .list-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .list-item-title {
+            font-weight: 500;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-item-url {
+            font-size: 11px;
+            color: var(--subtext-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .modal-btn-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 10px;
+        }
+
+        .clear-btn {
+            background: rgba(231, 76, 60, 0.2);
+            color: #ff9999;
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s ease;
+        }
+        .clear-btn:hover { background: #e74c3c; color: #fff; }
+
+        .close-modal-btn {
+            padding: 8px 18px;
+            background: var(--accent-color);
+            color: var(--accent-text-color);
+            box-shadow: 0 0 10px var(--accent-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            width: auto;
+        }
+        .close-modal-btn:hover { opacity: 0.9; transform: scale(1.01); }
+
+        .setting-section { display: flex; flex-direction: column; gap: 8px; }
+        .setting-row { display: flex; align-items: center; justify-content: space-between; color: var(--text-color); }
+        .setting-desc { font-size: 12px; color: var(--subtext-color); line-height: 1.4; }
+        
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #666; transition: .2s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 4px; bottom: 4px; background-color: #dcdcdc; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-color); box-shadow: 0 0 8px var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .color-dot { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s ease; }
+        .color-dot:hover { transform: scale(1.15); border-color: var(--text-color); }
+        .color-dot.active { border-color: var(--text-color); box-shadow: 0 0 10px var(--accent-color); transform: scale(1.1); }
+
+        /* MINIMAL MODE OVERRIDES */
+        body.minimal-mode *, 
+        body.minimal-mode *::before, 
+        body.minimal-mode *::after {
+            transition: none !important;
+            animation: none !important;
+        }
+        body.minimal-mode .tab.active { border-color: var(--border-color) !important; box-shadow: none !important; }
+        body.minimal-mode .tab.active::before { display: none !important; }
+        body.minimal-mode .address-bar:focus { border-color: var(--border-color) !important; box-shadow: none !important; }
+        body.minimal-mode #loadingGlowBar { display: none !important; }
+        body.minimal-mode .modal-dialog, 
+        body.minimal-mode #extensionsDropdownPanel { border: 1px solid var(--modal-border) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; transform: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Top Tab Bar -->
+    <div id="tabBar">
+        <div id="tabsContainer"></div>
+        <button class="new-tab-btn" onclick="createNewTab()" title="New Tab">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button class="nav-btn" onclick="goBack()" title="Back">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <button class="nav-btn" onclick="goForward()" title="Forward">
+            <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/></svg>
+        </button>
+        <button class="nav-btn" onclick="reloadPage()" title="Reload">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+        
+        <div class="address-bar-wrapper">
+            <input type="text" class="address-bar" id="addressBar" placeholder="Search Google or type a URL..." oninput="handleAddressInput(event)" onkeydown="handleNavInput(event)" autocomplete="off">
+            
+            <!-- Live Search Suggestions Dropdown -->
+            <div id="suggestionsDropdown"></div>
+        </div>
+        
+        <!-- Extensions Dropdown -->
+        <div id="extensionsToolbarBtn" style="position: relative; display: inline-block;">
+            <button class="action-btn" onclick="toggleExtensionsDropdown()" title="Manage Extensions">
+                <svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V5H6c-1.1 0-2 .9-2 2v4H2.5C1.67 11 1 11.67 1 12.5s.67 1.5 1.5 1.5H4v4c0 1.1.9 2 2 2h4v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V20h4c1.1 0 2-.9 2-2v-4h1.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5zM17 18H7V7h10v11z"/></svg>
+                <span id="extBadgeCount">0</span>
+            </button>
+            
+            <div id="extensionsDropdownPanel">
+                <div style="padding: 12px 16px; border-bottom: 1px solid var(--modal-border); font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; align-items: center; color: var(--text-color);">
+                    <span>Installed Extensions</span>
+                    <a href="#" onclick="openStoreTab(); return false;" style="font-size: 12px; color: var(--accent-color); font-weight: 600; text-decoration: none;">Store ↗</a>
+                </div>
+                <div id="installedExtsList" style="max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px;"></div>
+            </div>
+        </div>
+
+        <button class="action-btn" onclick="openHistoryModal(true)" title="History">
+            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        </button>
+        <button class="action-btn" onclick="openDownloadsModal(true)" title="Downloads">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </button>
+        <button class="action-btn" onclick="openSettingsModal(true)" title="Settings">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+
+        <div id="loadingGlowBar"></div>
+    </div>
+
+    <div class="viewport" id="viewport"></div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <h2>Browsing History <span style="font-size:12px; color:var(--subtext-color); font-weight:normal;">(Saved locally)</span></h2>
+            <div class="list-container" id="historyListContainer"></div>
+            <div class="modal-btn-row">
+                <button class="clear-btn" onclick="clearHistory()">Clear History</button>
+                <button class="close-modal-btn" onclick="openHistoryModal(false)">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Downloads Modal -->
+    <div id="downloadsModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <h2>Downloads</h2>
+            <div class="list-container" id="downloadsListContainer"></div>
+            <div class="modal-btn-row">
+                <button class="clear-btn" onclick="clearDownloads()">Clear List</button>
+                <button class="close-modal-btn" onclick="openDownloadsModal(false)">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Warning Modal (Nixus UI) -->
+    <div id="downloadWarningModal" class="modal-overlay">
+        <div class="modal-dialog" style="min-height: auto; text-align: center; gap: 20px; padding: 28px;">
+            <h2 style="justify-content: center; border: none; font-size: 20px; color: #ff9999;">⚠️ Active Download Warning</h2>
+            <p style="font-size: 14px; line-height: 1.5; color: var(--text-color); margin: 0;">
+                A File is Currently Downloading Right Now, If You Close It, The File Maybe Unusable or Corrupted.<br>Do You Wish to Continue?
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
+                <button class="clear-btn" style="padding: 10px 20px; font-size: 13px;" onclick="closeDownloadWarningModal()">DON'T DO IT!</button>
+                <button class="close-modal-btn" style="padding: 10px 20px; font-size: 13px;" onclick="forceCloseApp()">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <h2>Browser Settings</h2>
+            
+            <div class="setting-section">
+                <div class="setting-row">
+                    <span style="font-size:14px; font-weight: 500;">Minimal Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="minimalModeToggle" onchange="toggleMinimalMode(this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <span class="setting-desc">this will only open google.com on home page and the multiple tabs will be removed</span>
+            </div>
+
+            <hr style="border:0; border-top:1px solid var(--modal-border); margin:2px 0;">
+
+            <div class="setting-section">
+                <span style="font-size: 13px; color: var(--subtext-color); font-weight: 500;">Theme Appearance</span>
+                <div class="setting-row">
+                    <span>Dark Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <span style="font-size: 13px; color: var(--subtext-color); font-weight: 500;">Accent Color</span>
+                <div class="color-grid" id="colorGrid"></div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid var(--modal-border); margin:2px 0;">
+
+            <div class="setting-section">
+                <div class="setting-row">
+                    <div>
+                        <span style="font-size: 14px; font-weight: 500;">Check for Updates</span>
+                        <div class="setting-desc">Nixus Browse V2.0 (Up to date)</div>
+                    </div>
+                    <button class="action-btn" onclick="openUpdatePage()" style="background: var(--accent-color); color: var(--accent-text-color); padding: 8px 14px; width: auto; box-shadow: 0 0 10px var(--accent-color);">Update</button>
+                </div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid var(--modal-border); margin:2px 0;">
+
+            <div class="setting-section">
+                <div class="setting-row">
+                    <div>
+                        <span style="font-size: 14px; font-weight: 500;">Refresh Home Page</span>
+                        <div class="setting-desc">Refresh the Home Page if Not Working Properly Without Removing Your Stuffs</div>
+                    </div>
+                    <button class="action-btn" onclick="refreshHomePages()" style="background: var(--accent-color); color: var(--accent-text-color); padding: 8px 14px; width: auto; box-shadow: 0 0 10px var(--accent-color);">Refresh</button>
+                </div>
+            </div>
+
+            <div class="modal-btn-row" style="margin-top: auto;">
+                <span style="font-size: 11px; color: var(--subtext-color);">Nixus Browse V2.0 • Chromium <span id="chromiumVersionText">Loading...</span></span>
+                <button class="close-modal-btn" onclick="openSettingsModal(false)">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const presetColors = ['#007acc', '#e74c3c', '#2ecc71', '#9b59b6', '#f1c40f', '#e67e22', '#1abc9c', '#34495e', '#e84393', '#ffffff'];
+        const extensionDisplayNames = {
+            'adguard': 'AdGuard Content Blocker',
+            'adblock': 'Nixus Advanced AdBlocker',
+            'darkmode': 'Force Dark Reader',
+            'passwords': 'Nixus Vault Passwords',
+            'translator': 'Instant Page Translator',
+            'screencapture': 'Pro Screen Recorder',
+            'customcss': 'Custom Font Injector'
+        };
+
+        let tabs = [];
+        let activeTabIndex = -1;
+        let suggestionTimeout = null;
+
+        function initBrowser() {
+            const savedAccent = localStorage.getItem('browser_accent') || '#007acc';
+            applyAccent(savedAccent);
+            setupColorGrid(savedAccent);
+
+            const isDark = localStorage.getItem('browser_dark_mode') !== 'false';
+            document.getElementById('darkModeToggle').checked = isDark;
+            applyDarkMode(isDark);
+
+            const isMinimal = localStorage.getItem('browser_minimal_mode') === 'true';
+            document.getElementById('minimalModeToggle').checked = isMinimal;
+            applyMinimalMode(isMinimal);
+
+            if (window.process && window.process.versions) {
+                document.getElementById('chromiumVersionText').innerText = window.process.versions.chrome || 'Unknown';
+            } else {
+                document.getElementById('chromiumVersionText').innerText = '120.0.0.0 (Web)';
+            }
+
+            updateExtensionBadge();
+            createNewTab();
+        }
+
+        function openUpdatePage() {
+            openSettingsModal(false);
+            createNewTab('https://sites.google.com/view/nova-browser-team');
+        }
+
+        function openStoreTab() {
+            const panel = document.getElementById('extensionsDropdownPanel');
+            panel.classList.remove('show');
+            setTimeout(() => panel.style.display = 'none', 250);
+            createNewTab('file://' + __dirname + '/extensions.html');
+        }
+
+        function applyDarkMode(isDark) {
+            localStorage.setItem('browser_dark_mode', isDark);
+            if (isDark) {
+                document.body.classList.remove('light-mode');
+            } else {
+                document.body.classList.add('light-mode');
+            }
+        }
+
+        function toggleDarkMode(checkbox) {
+            applyDarkMode(checkbox.checked);
+        }
+
+        function applyMinimalMode(isMinimal) {
+            const tabBar = document.getElementById('tabBar');
+            tabBar.style.display = isMinimal ? 'none' : 'flex';
+
+            const extBtn = document.getElementById('extensionsToolbarBtn');
+            if (extBtn) {
+                extBtn.style.display = isMinimal ? 'none' : 'inline-block';
+            }
+            
+            if (isMinimal) {
+                document.body.classList.add('minimal-mode');
+            } else {
+                document.body.classList.remove('minimal-mode');
+            }
+        }
+
+        function toggleMinimalMode(checkbox) {
+            const isMinimal = checkbox.checked;
+            localStorage.setItem('browser_minimal_mode', isMinimal);
+            applyMinimalMode(isMinimal);
+            
+            if (activeTabIndex >= 0 && tabs[activeTabIndex]) {
+                const targetUrl = getHomeUrl();
+                tabs[activeTabIndex].url = targetUrl;
+                const wv = document.getElementById(`webview-${tabs[activeTabIndex].id}`);
+                if (wv) wv.src = targetUrl;
+            }
+        }
+
+        function getHomeUrl() {
+            const isMinimal = localStorage.getItem('browser_minimal_mode') === 'true';
+            return isMinimal ? 'https://www.google.com' : 'file://' + __dirname + '/home.html';
+        }
+
+        function refreshHomePages() {
+            const homeUrl = getHomeUrl();
+            tabs.forEach(tab => {
+                if (tab.url && (tab.url.includes('home.html') || tab.url.includes('google.com'))) {
+                    tab.url = homeUrl;
+                    const wv = document.getElementById(`webview-${tab.id}`);
+                    if (wv) wv.src = homeUrl;
+                }
+            });
+            openSettingsModal(false);
+        }
+
+        function createNewTab(url = null) {
+            const isMinimal = localStorage.getItem('browser_minimal_mode') === 'true';
+            if (isMinimal && tabs.length > 0) return;
+
+            const targetUrl = url || getHomeUrl();
+            const tabId = Date.now();
+            
+            const tabObj = { id: tabId, url: targetUrl, title: 'New Tab', isNew: true };
+            tabs.push(tabObj);
+
+            const viewport = document.getElementById('viewport');
+            const webview = document.createElement('webview');
+            webview.id = `webview-${tabId}`;
+            webview.src = targetUrl;
+            viewport.appendChild(webview);
+
+            webview.addEventListener('did-start-loading', () => {
+                if (tabs[activeTabIndex] && tabs[activeTabIndex].id === tabId) {
+                    showLoadingGlow(true);
+                }
+            });
+
+            webview.addEventListener('did-finish-load', () => {
+                applyActiveExtensionsToWebview(webview);
+            });
+
+            webview.addEventListener('did-stop-loading', () => {
+                if (tabs[activeTabIndex] && tabs[activeTabIndex].id === tabId) {
+                    showLoadingGlow(false);
+                }
+            });
+
+            webview.addEventListener('page-title-updated', (e) => {
+                tabObj.title = e.title;
+                renderTabs();
+            });
+
+            webview.addEventListener('did-navigate', (e) => {
+                if (e.url.includes('chromewebstore.google.com') || e.url.includes('chrome.google.com/webstore')) {
+                    webview.src = 'file://' + __dirname + '/extensions.html';
+                    return;
+                }
+                tabObj.url = e.url;
+                updateAddressBarDisplay(e.url);
+                recordHistory(tabObj.title, e.url);
+            });
+
+            webview.addEventListener('did-navigate-in-page', (e) => {
+                if (e.url.includes('chromewebstore.google.com') || e.url.includes('chrome.google.com/webstore')) {
+                    webview.src = 'file://' + __dirname + '/extensions.html';
+                    return;
+                }
+                tabObj.url = e.url;
+                updateAddressBarDisplay(e.url);
+                recordHistory(tabObj.title, e.url);
+            });
+
+            switchTab(tabs.length - 1);
+            
+            setTimeout(() => {
+                const container = document.getElementById('tabsContainer');
+                container.scrollLeft = container.scrollWidth;
+            }, 50);
+        }
+
+        function applyActiveExtensionsToWebview(webview) {
+            const isMinimal = localStorage.getItem('browser_minimal_mode') === 'true';
+            if (isMinimal) return;
+
+            if (!webview || !webview.executeJavaScript) return;
+            let installedMap = {};
+            try {
+                installedMap = JSON.parse(localStorage.getItem('nixus_installed_extensions')) || {};
+            } catch (e) { installedMap = {}; }
+
+            let customScripts = {};
+            try {
+                customScripts = JSON.parse(localStorage.getItem('nixus_custom_scripts')) || {};
+            } catch(e) { customScripts = {}; }
+
+            Object.keys(installedMap).forEach(id => {
+                if (installedMap[id] === true) {
+                    if (id.startsWith('custom_') && customScripts[id]) {
+                        webview.executeJavaScript(customScripts[id].code).catch(() => {});
+                    }
+                }
+            });
+
+            if (installedMap['adblock'] === true || installedMap['adguard'] === true) {
+                webview.executeJavaScript(`
+                    (() => {
+                        const adSelectors = ['iframe[src*="ads"]', 'div[class*="banner"]', '.ad-slot', 'ins.adsbygoogle', '[id*="google_ads"]'];
+                        adSelectors.forEach(selector => {
+                            document.querySelectorAll(selector).forEach(el => el.remove());
+                        });
+
+                        const observer = new MutationObserver(() => {
+                            const skipButton = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern');
+                            const adOverlay = document.querySelector('.ad-showing, .ytp-ad-player-overlay');
+                            const video = document.querySelector('video');
+
+                            if (adOverlay && video) {
+                                if (video.duration && !isNaN(video.duration)) {
+                                    video.currentTime = video.duration;
+                                }
+                                video.playbackRate = 16.0;
+                            }
+
+                            if (skipButton) {
+                                skipButton.click();
+                            }
+                        });
+
+                        if (document.body) {
+                            observer.observe(document.body, { childList: true, subtree: true });
+                        }
+                    })();
+                `).catch(() => {});
+            }
+
+            if (installedMap['darkmode'] === true) {
+                webview.insertCSS(`
+                    html {
+                        filter: invert(90%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
+                        background-color: #121212 !important;
+                    }
+                    img, video, canvas, svg {
+                        filter: invert(100%) hue-rotate(180deg) !important;
+                    }
+                `).catch(() => {});
+            }
+
+            if (installedMap['customcss'] === true) {
+                webview.insertCSS(`
+                    * {
+                        font-family: 'Inter', sans-serif !important;
+                    }
+                `).catch(() => {});
+            }
+        }
+
+        function showLoadingGlow(isLoading) {
+            const glowBar = document.getElementById('loadingGlowBar');
+            if (isLoading) {
+                glowBar.style.opacity = '1';
+                glowBar.style.width = '70%';
+            } else {
+                glowBar.style.width = '100%';
+                setTimeout(() => {
+                    glowBar.style.opacity = '0';
+                    setTimeout(() => { glowBar.style.width = '0%'; }, 300);
+                }, 150);
+            }
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabsContainer');
+            container.innerHTML = '';
+            
+            if (tabs.length <= 1) {
+                container.classList.add('single-tab');
+            } else {
+                container.classList.remove('single-tab');
+            }
+
+            tabs.forEach((tab, index) => {
+                const tabEl = document.createElement('div');
+                tabEl.className = `tab ${index === activeTabIndex ? 'active' : ''}`;
+                
+                if (tab.isNew) {
+                    tabEl.classList.add('tab-opening');
+                    tab.isNew = false;
+                }
+
+                tabEl.innerHTML = `
+                    <span>${tab.title}</span>
+                    <span class="tab-close" onclick="closeTab(event, ${index})" title="Close Tab">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </span>
+                `;
+                tabEl.onclick = () => switchTab(index);
+                container.appendChild(tabEl);
+            });
+        }
+
+        function switchTab(index) {
+            if (index < 0 || index >= tabs.length) return;
+            activeTabIndex = index;
+            renderTabs();
+
+            tabs.forEach((tab, idx) => {
+                const wv = document.getElementById(`webview-${tab.id}`);
+                if (wv) {
+                    if (idx === index) {
+                        wv.classList.add('active');
+                        updateAddressBarDisplay(wv.getURL ? wv.getURL() : tab.url);
+                    } else {
+                        wv.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        function updateAddressBarDisplay(url) {
+            const addressBar = document.getElementById('addressBar');
+            if (url && (url.includes('home.html') || url.includes('extensions.html') || url === 'https://www.google.com/')) {
+                addressBar.value = '';
+            } else {
+                addressBar.value = url || '';
+            }
+        }
+
+        function closeTab(e, index) {
+            e.stopPropagation();
+            if (tabs.length === 1) return;
+
+            const container = document.getElementById('tabsContainer');
+            const tabEl = container.children[index];
+
+            if (tabEl) {
+                tabEl.classList.add('closing');
+            }
+
+            setTimeout(() => {
+                const closingTab = tabs[index];
+                const wv = document.getElementById(`webview-${closingTab.id}`);
+                if (wv) wv.remove();
+
+                tabs.splice(index, 1);
+                if (activeTabIndex >= index) {
+                    activeTabIndex = Math.max(0, activeTabIndex - 1);
+                }
+                switchTab(activeTabIndex);
+            }, 250);
+        }
+
+        function applyAccent(color) {
+            localStorage.setItem('browser_accent', color);
+            document.documentElement.style.setProperty('--accent-color', color);
+
+            if (color.toLowerCase() === '#ffffff') {
+                document.documentElement.style.setProperty('--accent-text-color', '#1e1e1e');
+            } else {
+                document.documentElement.style.setProperty('--accent-text-color', '#ffffff');
+            }
+
+            tabs.forEach(tab => {
+                const wv = document.getElementById(`webview-${tab.id}`);
+                if (wv && wv.executeJavaScript) {
+                    wv.executeJavaScript(`
+                        if (typeof document !== 'undefined') {
+                            document.documentElement.style.setProperty('--accent-color', '${color}');
+                        }
+                    `).catch(() => {});
+                }
+            });
+        }
+
+        function setupColorGrid(activeColor) {
+            const grid = document.getElementById('colorGrid');
+            grid.innerHTML = '';
+            presetColors.forEach(color => {
+                const dot = document.createElement('div');
+                dot.className = `color-dot ${color.toLowerCase() === activeColor.toLowerCase() ? 'active' : ''}`;
+                dot.style.background = color;
+                dot.onclick = () => {
+                    applyAccent(color);
+                    setupColorGrid(color);
+                };
+                grid.appendChild(dot);
+            });
+        }
+
+        function recordHistory(title, url) {
+            if (!url || url.includes('home.html') || url.includes('extensions.html')) return;
+            let history = JSON.parse(localStorage.getItem('browser_history') || '[]');
+            if (history.length === 0 || history[0].url !== url) {
+                history.unshift({ title: title || url, url, time: new Date().toLocaleTimeString() });
+                if (history.length > 100) history.pop();
+                localStorage.setItem('browser_history', JSON.stringify(history));
+            }
+        }
+
+        function openHistoryModal(open) {
+            const modal = document.getElementById('historyModal');
+            if (open) {
+                renderHistoryList();
+                modal.classList.add('open');
+            } else {
+                modal.classList.remove('open');
+            }
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyListContainer');
+            container.innerHTML = '';
+            let history = JSON.parse(localStorage.getItem('browser_history') || '[]');
+            if (history.length === 0) {
+                container.innerHTML = '<div style="color: var(--subtext-color); text-align: center; padding: 20px;">No browsing history yet.</div>';
+                return;
+            }
+            history.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-item-info" onclick="openHistoryItemInNewTab('${item.url}')">
+                        <span class="list-item-title">${item.title}</span>
+                        <span class="list-item-url">${item.url}</span>
+                    </div>
+                    <button class="clear-btn" style="padding: 4px 8px; font-size: 11px;" onclick="deleteHistoryItem(event, ${idx})">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function openHistoryItemInNewTab(url) {
+            openHistoryModal(false);
+            createNewTab(url);
+        }
+
+        function deleteHistoryItem(event, index) {
+            event.stopPropagation();
+            let history = JSON.parse(localStorage.getItem('browser_history') || '[]');
+            history.splice(index, 1);
+            localStorage.setItem('browser_history', JSON.stringify(history));
+            renderHistoryList();
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('browser_history');
+            renderHistoryList();
+        }
+
+        // --- SEARCH SUGGESTIONS AUTOCOMPLETE ---
+        function handleAddressInput(e) {
+            const query = e.target.value.trim();
+            const dropdown = document.getElementById('suggestionsDropdown');
+
+            clearTimeout(suggestionTimeout);
+
+            if (!query || query.startsWith('http://') || query.startsWith('https://') || query.includes('.')) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            suggestionTimeout = setTimeout(() => {
+                fetch(`https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const suggestions = data[1] || [];
+                        renderSuggestions(suggestions);
+                    })
+                    .catch(() => {
+                        dropdown.classList.remove('show');
+                    });
+            }, 150);
+        }
+
+        function renderSuggestions(suggestions) {
+            const dropdown = document.getElementById('suggestionsDropdown');
+            dropdown.innerHTML = '';
+
+            if (suggestions.length === 0) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            suggestions.slice(0, 8).forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <span>${item}</span>
+                `;
+                div.onclick = () => {
+                    document.getElementById('addressBar').value = item;
+                    dropdown.classList.remove('show');
+                    navigateSearch(item);
+                };
+                dropdown.appendChild(div);
+            });
+
+            dropdown.classList.add('show');
+        }
+
+        function navigateSearch(query) {
+            const wv = getActiveWebview();
+            if (!wv) return;
+            let targetURL = query;
+            if (!query.startsWith('http://') && !query.startsWith('https://')) {
+                if (query.includes('.') && !query.includes(' ')) {
+                    targetURL = 'https://' + query;
+                } else {
+                    targetURL = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                }
+            }
+            wv.src = targetURL;
+        }
+
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.address-bar-wrapper')) {
+                const dropdown = document.getElementById('suggestionsDropdown');
+                if (dropdown) dropdown.classList.remove('show');
+            }
+        });
+
+        // --- DOWNLOADS, LIVE PROGRESS & CLOSE WARNING ---
+        if (window.require) {
+            const { ipcRenderer } = window.require('electron');
+
+            ipcRenderer.on('trigger-download-warning', () => {
+                document.getElementById('downloadWarningModal').classList.add('open');
+            });
+        }
+
+        function closeDownloadWarningModal() {
+            document.getElementById('downloadWarningModal').classList.remove('open');
+        }
+
+        function forceCloseApp() {
+            if (window.require) {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.send('force-close-app');
+            }
+        }
+
+        function addOrUpdateDownload(item, isProgress = false, isCompleted = false) {
+            let downloads = JSON.parse(localStorage.getItem('nixus_downloads') || '[]');
+            const existingIndex = downloads.findIndex(d => d.id === item.id);
+            
+            if (existingIndex >= 0) {
+                downloads[existingIndex] = { ...downloads[existingIndex], ...item };
+                if (isCompleted) {
+                    downloads[existingIndex].timeLabel = 'Long time ago';
+                }
+            } else {
+                downloads.unshift({
+                    id: item.id || Date.now(),
+                    name: item.name || 'Unknown File',
+                    status: item.status || 'Downloading...',
+                    percent: item.percent || 0,
+                    timeLabel: isCompleted ? 'Long time ago' : 'Recent'
+                });
+            }
+
+            localStorage.setItem('nixus_downloads', JSON.stringify(downloads));
+            renderDownloadsList();
+        }
+
+        function renderDownloadsList() {
+            const container = document.getElementById('downloadsListContainer');
+            container.innerHTML = '';
+            let downloads = JSON.parse(localStorage.getItem('nixus_downloads') || '[]');
+
+            if (downloads.length === 0) {
+                container.innerHTML = '<div style="color: var(--subtext-color); text-align: center; padding: 20px;">No downloads recorded.</div>';
+                return;
+            }
+
+            downloads.forEach((item, idx) => {
+                const timeText = item.timeLabel || 'Long time ago';
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.style.cssText = 'flex-direction: column; align-items: stretch; gap: 6px;';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="list-item-info">
+                            <span class="list-item-title">${item.name}</span>
+                            <span class="list-item-url">${item.status} • ${timeText}</span>
+                        </div>
+                        <button class="clear-btn" style="padding: 4px 8px; font-size: 11px;" onclick="deleteDownloadItem(${idx})">Delete</button>
+                    </div>
+                    <div style="background: rgba(128,128,128,0.2); border-radius: 4px; height: 6px; width: 100%; overflow: hidden;">
+                        <div style="background: var(--accent-color); height: 100%; width: ${item.percent}%; transition: width 0.2s ease;"></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteDownloadItem(index) {
+            let downloads = JSON.parse(localStorage.getItem('nixus_downloads') || '[]');
+            downloads.splice(index, 1);
+            localStorage.setItem('nixus_downloads', JSON.stringify(downloads));
+            renderDownloadsList();
+        }
+
+        function clearDownloads() {
+            localStorage.removeItem('nixus_downloads');
+            renderDownloadsList();
+        }
+
+        function openDownloadsModal(open) {
+            const modal = document.getElementById('downloadsModal');
+            if (open) {
+                renderDownloadsList();
+                modal.classList.add('open');
+            } else {
+                modal.classList.remove('open');
+            }
+        }
+
+        function openSettingsModal(open) {
+            const modal = document.getElementById('settingsModal');
+            if (open) modal.classList.add('open');
+            else modal.classList.remove('open');
+        }
+
+        function toggleExtensionsDropdown() {
+            const panel = document.getElementById('extensionsDropdownPanel');
+            const isVisible = panel.classList.contains('show');
+            if (!isVisible) {
+                renderInstalledDropdownList();
+                panel.style.display = 'flex';
+                setTimeout(() => panel.classList.add('show'), 10);
+            } else {
+                panel.classList.remove('show');
+                setTimeout(() => {
+                    if (!panel.classList.contains('show')) panel.style.display = 'none';
+                }, 250);
+            }
+        }
+
+        function renderInstalledDropdownList() {
+            const container = document.getElementById('installedExtsList');
+            container.innerHTML = '';
+            
+            let rawData = localStorage.getItem('nixus_installed_extensions');
+            let installedMap = {};
+
+            try {
+                let parsed = JSON.parse(rawData);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(id => { installedMap[id] = true; });
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    installedMap = parsed;
+                }
+            } catch (e) {
+                installedMap = {};
+            }
+
+            let customScripts = {};
+            try {
+                customScripts = JSON.parse(localStorage.getItem('nixus_custom_scripts')) || {};
+            } catch(e) { customScripts = {}; }
+
+            const keys = Object.keys(installedMap);
+            updateExtensionBadge();
+
+            if (keys.length === 0) {
+                container.innerHTML = `
+                    <div style="color: var(--subtext-color); text-align: center; padding: 22px 14px; font-size: 13px; line-height: 1.5;">
+                        no extensions found, download the extensions from 
+                        <a href="#" onclick="openStoreTab(); return false;" style="color: var(--accent-color); font-weight: 600; text-decoration: underline;">Nixus Store</a>
+                    </div>
+                `;
+                return;
+            }
+
+            keys.forEach(id => {
+                const isEnabled = installedMap[id] === true;
+                let displayName = extensionDisplayNames[id] || id;
+                if (id.startsWith('custom_') && customScripts[id]) {
+                    displayName = customScripts[id].name;
+                }
+
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.style.cssText = 'padding: 10px 12px; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px;';
+                row.innerHTML = `
+                    <span style="font-size: 13px; font-weight: 500; color: var(--text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-transform: capitalize;">${displayName}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label class="switch">
+                            <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleExtStatus('${id}', this)">
+                            <span class="slider"></span>
+                        </label>
+                        <button class="clear-btn" style="padding: 4px 6px; font-size: 10px;" onclick="removeExtFromDropdown('${id}')" title="Remove Extension">✕</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function toggleExtStatus(id, checkbox) {
+            let installedMap = {};
+            try {
+                installedMap = JSON.parse(localStorage.getItem('nixus_installed_extensions')) || {};
+            } catch(e) { installedMap = {}; }
+            
+            if (Array.isArray(installedMap)) {
+                let obj = {};
+                installedMap.forEach(i => obj[i] = true);
+                installedMap = obj;
+            }
+
+            installedMap[id] = checkbox.checked;
+            localStorage.setItem('nixus_installed_extensions', JSON.stringify(installedMap));
+            
+            const wv = getActiveWebview();
+            if (wv) applyActiveExtensionsToWebview(wv);
+        }
+
+        function removeExtFromDropdown(id) {
+            let installedMap = {};
+            try {
+                installedMap = JSON.parse(localStorage.getItem('nixus_installed_extensions')) || {};
+            } catch(e) { installedMap = {}; }
+            
+            if (Array.isArray(installedMap)) {
+                let obj = {};
+                installedMap.forEach(i => obj[i] = true);
+                installedMap = obj;
+            }
+
+            delete installedMap[id];
+            localStorage.setItem('nixus_installed_extensions', JSON.stringify(installedMap));
+            renderInstalledDropdownList();
+            updateExtensionBadge();
+        }
+
+        function updateExtensionBadge() {
+            let installedMap = {};
+            try {
+                let parsed = JSON.parse(localStorage.getItem('nixus_installed_extensions'));
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(id => { installedMap[id] = true; });
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    installedMap = parsed;
+                }
+            } catch(e) { installedMap = {}; }
+
+            const keys = Object.keys(installedMap);
+            const badge = document.getElementById('extBadgeCount');
+            if (keys.length > 0) {
+                badge.innerText = keys.length;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('#extensionsDropdownPanel') && !e.target.closest('[title="Manage Extensions"]')) {
+                const panel = document.getElementById('extensionsDropdownPanel');
+                if (panel && panel.classList.contains('show')) {
+                    panel.classList.remove('show');
+                    setTimeout(() => panel.style.display = 'none', 250);
+                }
+            }
+        });
+
+        function goBack() {
+            const wv = getActiveWebview();
+            if (wv && wv.canGoBack()) wv.goBack();
+        }
+
+        function goForward() {
+            const wv = getActiveWebview();
+            if (wv && wv.canGoForward()) wv.goForward();
+        }
+
+        function reloadPage() {
+            const wv = getActiveWebview();
+            if (wv) wv.reload();
+        }
+
+        function getActiveWebview() {
+            if (activeTabIndex < 0 || !tabs[activeTabIndex]) return null;
+            return document.getElementById(`webview-${tabs[activeTabIndex].id}`);
+        }
+
+        function handleNavInput(e) {
+            if (e.key === 'Enter') {
+                const dropdown = document.getElementById('suggestionsDropdown');
+                if (dropdown) dropdown.classList.remove('show');
+
+                const val = e.target.value.trim();
+                const wv = getActiveWebview();
+                if (!wv || !val) return;
+
+                let targetURL = val;
+                if (!val.startsWith('http://') && !val.startsWith('https://')) {
+                    if (val.includes('.') && !val.includes(' ')) {
+                        targetURL = 'https://' + val;
+                    } else {
+                        targetURL = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
+                    }
+                }
+                wv.src = targetURL;
+            }
+        }
+
+        initBrowser();
+    </script>
+</body>
+</html>

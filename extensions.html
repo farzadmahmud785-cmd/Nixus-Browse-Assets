@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nixus Extensions Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent-color: #007acc;
+            --accent-text-color: #ffffff;
+            --bg-color: #1e1e1e;
+            --panel-bg: #252526;
+            --card-bg: rgba(45, 45, 45, 0.7);
+            --border-color: #333333;
+            --text-color: #ffffff;
+            --subtext-color: #aaaaaa;
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+        }
+
+        body.light-mode {
+            --bg-color: #f0f0f0;
+            --panel-bg: #ffffff;
+            --card-bg: rgba(245, 245, 245, 0.9);
+            --border-color: #cccccc;
+            --text-color: #1e1e1e;
+            --subtext-color: #555555;
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+        }
+
+        * { box-sizing: border-box; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 30px;
+            height: 100vh;
+            overflow-y: auto;
+            user-select: none;
+        }
+
+        /* SMOOTH ENTRANCE ANIMATIONS */
+        .store-header, .extension-card {
+            animation: smoothScaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        @keyframes smoothScaleIn {
+            0% {
+                opacity: 0;
+                transform: translateY(12px) scale(0.97);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .store-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            max-width: 1000px;
+            animation-delay: 0.05s;
+        }
+
+        .store-title-area h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 6px 0;
+        }
+
+        .subtitle {
+            color: var(--subtext-color);
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .home-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .home-btn:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 10px var(--accent-color);
+        }
+
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            max-width: 1000px;
+        }
+
+        .extension-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            animation-delay: 0.15s;
+        }
+
+        .extension-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-color);
+            box-shadow: 0 6px 22px rgba(0,0,0,0.4);
+        }
+
+        .ext-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .ext-desc {
+            font-size: 12px;
+            color: var(--subtext-color);
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .install-btn {
+            background: var(--accent-color);
+            color: var(--accent-text-color);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            align-self: flex-start;
+            transition: opacity 0.2s ease, transform 0.15s ease;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .install-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .install-btn.installed {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="store-header">
+        <div class="store-title-area">
+            <h1>Nixus Extensions</h1>
+            <div class="subtitle">Enhance your browsing experience with powerful add-ons.</div>
+        </div>
+        <a href="home.html" class="home-btn">
+            <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Home
+        </a>
+    </div>
+
+    <div class="store-grid" id="storeGrid"></div>
+
+    <script>
+        const extensions = [
+            { id: 'adblock', name: 'Nixus Advanced AdBlocker', desc: 'Blocks intrusive banner ads, sponsor slots, and skips video advertisements automatically.' },
+            { id: 'darkmode', name: 'Force Dark Reader', desc: 'Applies a clean, high-contrast dark theme mode to all websites you browse.' },
+            { id: 'passwords', name: 'Nixus Vault Passwords', desc: 'Securely manage and autofill your login credentials locally in your browser.' },
+            { id: 'translator', name: 'Instant Page Translator', desc: 'Translate web pages seamlessly into your preferred language with a single click.' },
+            { id: 'screencapture', name: 'Pro Screen Recorder', desc: 'Take high-resolution screenshots and record webpage activity directly.' },
+            { id: 'customcss', name: 'Custom Font Injector', desc: 'Applies clean typography overrides across web text content.' }
+        ];
+
+        function initStore() {
+            const savedAccent = localStorage.getItem('browser_accent') || '#007acc';
+            document.documentElement.style.setProperty('--accent-color', savedAccent);
+
+            const isDark = localStorage.getItem('browser_dark_mode') !== 'false';
+            if (!isDark) document.body.classList.add('light-mode');
+
+            renderStore();
+        }
+
+        function renderStore() {
+            const grid = document.getElementById('storeGrid');
+            grid.innerHTML = '';
+
+            let installedMap = {};
+            try {
+                let parsed = JSON.parse(localStorage.getItem('nixus_installed_extensions'));
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(id => { installedMap[id] = true; });
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    installedMap = parsed;
+                }
+            } catch(e) { installedMap = {}; }
+
+            extensions.forEach(ext => {
+                const isInstalled = installedMap[ext.id] === true;
+                const card = document.createElement('div');
+                card.className = 'extension-card';
+                card.innerHTML = `
+                    <div class="ext-title">${ext.name}</div>
+                    <div class="ext-desc">${ext.desc}</div>
+                    <button class="install-btn ${isInstalled ? 'installed' : ''}" onclick="toggleInstall('${ext.id}')">
+                        ${isInstalled ? 'Installed ✓' : 'Install'}
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleInstall(id) {
+            let installedMap = {};
+            try {
+                installedMap = JSON.parse(localStorage.getItem('nixus_installed_extensions')) || {};
+            } catch(e) { installedMap = {}; }
+
+            if (Array.isArray(installedMap)) {
+                let obj = {};
+                installedMap.forEach(i => obj[i] = true);
+                installedMap = obj;
+            }
+
+            if (installedMap[id] === true) {
+                delete installedMap[id];
+            } else {
+                installedMap[id] = true;
+            }
+
+            localStorage.setItem('nixus_installed_extensions', JSON.stringify(installedMap));
+            renderStore();
+        }
+
+        initStore();
+    </script>
+</body>
+</html>

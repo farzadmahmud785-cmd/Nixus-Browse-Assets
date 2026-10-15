@@ -1,0 +1,12 @@
+{
+  "name": "nixus-browse",
+  "productName": "Nixus Browse",
+  "version": "2.0.0",
+  "description": "Nixus Browse V2.0",
+  "main": "main.js",
+  "author": "Farzad",
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  }
+}

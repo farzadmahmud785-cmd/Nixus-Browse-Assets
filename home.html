@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Tab</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent-color: #007acc;
+            --bg-color: #1e1e1e;
+            --card-bg: rgba(35, 35, 35, 0.85);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --subtext-color: #aaaaaa;
+            --modal-bg: #252526;
+            --input-bg: #1a1a1a;
+            --icon-color: #ffffff;
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+            --wallpaper-overlay: rgba(0, 0, 0, 0.4);
+        }
+
+        body.light-mode {
+            --bg-color: #f5f5f5;
+            --card-bg: rgba(240, 240, 240, 0.9);
+            --card-border: rgba(0, 0, 0, 0.1);
+            --text-color: #1e1e1e;
+            --subtext-color: #666666;
+            --modal-bg: #ffffff;
+            --input-bg: #eaeaea;
+            --icon-color: #1e1e1e;
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.4);
+            --wallpaper-overlay: rgba(255, 255, 255, 0.25);
+        }
+
+        /* AUTO DETECTED LIGHT THEME FOR BRIGHT WALLPAPERS */
+        body.auto-light-theme {
+            --text-color: #1e1e1e;
+            --subtext-color: #555555;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-border: rgba(0, 0, 0, 0.15);
+            --icon-color: #1e1e1e;
+            --wallpaper-overlay: rgba(255, 255, 255, 0.2);
+        }
+
+        /* CUSTOM SCROLLBAR STYLING */
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                        border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                        color 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                        box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                        transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            user-select: none;
+            position: relative;
+        }
+
+        /* Smooth Wallpaper Crossfade Layers */
+        .wallpaper-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .wallpaper-layer.active {
+            opacity: 1;
+        }
+
+        /* Tint overlay for readability when wallpaper is active */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--wallpaper-overlay);
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.6s ease, background 0.3s ease;
+        }
+        body.has-wallpaper::before {
+            opacity: 1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 760px;
+            padding: 100px 20px 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 28px;
+            z-index: 2;
+            animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Prominent Header with Accent Glow */
+        .greeting-title {
+            font-size: 56px;
+            font-weight: 700;
+            color: var(--text-color);
+            text-shadow: 0 0 20px var(--accent-color), 0 0 40px var(--accent-color), 0 4px 15px rgba(0,0,0,0.6);
+            margin: 0;
+            letter-spacing: 1.5px;
+            text-align: center;
+        }
+
+        /* Search Bar */
+        .search-box {
+            width: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 48px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            color: var(--text-color);
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px var(--accent-color);
+            transform: scale(1.01);
+        }
+
+        .search-input::placeholder {
+            color: var(--subtext-color);
+            opacity: 0.8;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            width: 18px;
+            height: 18px;
+            fill: var(--subtext-color);
+            pointer-events: none;
+        }
+
+        /* Shortcuts Grid - 5 columns layout */
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            width: 100%;
+        }
+
+        .shortcuts-grid.hidden {
+            display: none;
+        }
+
+        .shortcut-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 16px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            backdrop-filter: blur(8px);
+        }
+
+        .shortcut-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            border-color: var(--accent-color);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 12px var(--accent-color);
+        }
+
+        .shortcut-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(128, 128, 128, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .shortcut-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            text-align: center;
+        }
+
+        .shortcut-menu-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: none;
+            border: none;
+            color: var(--subtext-color);
+            font-size: 14px;
+            cursor: pointer;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+        }
+
+        .shortcut-card:hover .shortcut-menu-btn {
+            opacity: 1;
+        }
+
+        .shortcut-menu-btn:hover {
+            background: rgba(128, 128, 128, 0.4);
+            color: var(--text-color);
+        }
+
+        .shortcut-dropdown {
+            position: absolute;
+            top: 28px;
+            right: 6px;
+            background: var(--modal-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+            overflow: hidden;
+            min-width: 90px;
+            animation: dropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes dropdownFade {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .shortcut-dropdown.show {
+            display: flex;
+        }
+
+        .dropdown-item {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            font-size: 11px;
+            color: var(--text-color);
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .dropdown-item:hover {
+            background: var(--accent-color);
+            color: #ffffff;
+        }
+
+        /* Add Shortcut Card styled right inside grid flow */
+        .add-card {
+            background: var(--card-bg);
+            border: 2px dashed var(--card-border);
+            border-radius: 14px;
+            padding: 16px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            backdrop-filter: blur(8px);
+        }
+
+        .add-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 12px var(--accent-color);
+        }
+
+        .add-icon-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(128, 128, 128, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-icon-circle svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--subtext-color);
+            transition: fill 0.25s ease;
+        }
+
+        .add-card:hover .add-icon-circle {
+            background: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-color);
+        }
+
+        .add-card:hover .add-icon-circle svg {
+            fill: #ffffff;
+        }
+
+        /* Bottom Right Action Buttons Container */
+        .bottom-actions {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .action-chip {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-chip svg {
+            width: 15px;
+            height: 15px;
+            fill: var(--icon-color);
+        }
+
+        .action-chip:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.06);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35), 0 0 10px var(--accent-color);
+        }
+
+        /* Smooth Animated Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-dialog {
+            background: var(--modal-bg);
+            color: var(--text-color);
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 0 25px var(--accent-color), 0 15px 35px rgba(0,0,0,0.6);
+            padding: 24px;
+            border-radius: 14px;
+            width: 420px;
+            min-height: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transform: translateY(20px) scale(0.92);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.open .modal-dialog {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-dialog h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            color: var(--subtext-color);
+        }
+
+        .form-input {
+            padding: 10px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .file-upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-upload-btn {
+            background: rgba(128, 128, 128, 0.2);
+            color: var(--text-color);
+            border: 1px solid var(--card-border);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .file-upload-btn:hover {
+            background: rgba(128, 128, 128, 0.35);
+            border-color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        #file-name-display {
+            font-size: 12px;
+            color: var(--subtext-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wallpaper-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .wallpaper-option {
+            height: 70px;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .wallpaper-option:hover {
+            transform: scale(1.05);
+            border-color: var(--subtext-color);
+        }
+
+        .wallpaper-option.active {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-color);
+            transform: scale(1.03);
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #666; border-radius: 22px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: white; border-radius: 50%;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        input:checked + .slider { background-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        .close-modal-btn {
+            margin-top: auto;
+            padding: 9px 18px;
+            background: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-color);
+            border: none;
+            color: #ffffff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            width: 100%;
+        }
+        .close-modal-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+            box-shadow: 0 0 18px var(--accent-color);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn:hover { transform: scale(1.02); }
+        .btn-cancel { background: rgba(128,128,128,0.25); color: var(--text-color); }
+        .btn-cancel:hover { background: rgba(128,128,128,0.4); }
+        .btn-save { background: var(--accent-color); color: #ffffff; box-shadow: 0 0 8px var(--accent-color); }
+
+        #luminanceCanvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Dual wallpaper crossfade layers -->
+    <div class="wallpaper-layer" id="bgLayerA"></div>
+    <div class="wallpaper-layer" id="bgLayerB"></div>
+    <canvas id="luminanceCanvas"></canvas>
+
+    <div class="container">
+        <!-- Rebranded Header -->
+        <h1 class="greeting-title">Nixus Browse</h1>
+
+        <!-- Main Search Bar -->
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" class="search-input" id="mainSearchInput" placeholder="Search Google or type a URL..." onkeydown="handleSearchKey(event)">
+        </div>
+
+        <!-- Shortcuts Speed Dial Grid -->
+        <div class="shortcuts-grid" id="shortcutsGrid"></div>
+    </div>
+
+    <!-- Bottom Right Action Buttons -->
+    <div class="bottom-actions">
+        <a href="extensions.html" class="action-chip">
+            <svg viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V5H6c-1.1 0-2 .9-2 2v4H2.5C1.67 11 1 11.67 1 12.5s.67 1.5 1.5 1.5H4v4c0 1.1.9 2 2 2h4v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V20h4c1.1 0 2-.9 2-2v-4h1.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5zM17 18H7V7h10v11z"/></svg>
+            Extensions
+        </a>
+        <button class="action-chip" onclick="openCustomizeModal()">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            Customize
+        </button>
+    </div>
+
+    <!-- Add/Edit Shortcut Modal -->
+    <div class="modal-overlay" id="shortcutModal">
+        <div class="modal-dialog" style="min-height: auto;">
+            <h3 id="modalTitle">Add Shortcut</h3>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" class="form-input" id="shortcutNameInput" placeholder="e.g. GitHub">
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="text" class="form-input" id="shortcutUrlInput" placeholder="https://github.com">
+            </div>
+            <div class="modal-btn-row" style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+                <button class="btn btn-cancel" onclick="closeShortcutModal()">Cancel</button>
+                <button class="btn btn-save" onclick="saveShortcut()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customize Modal -->
+    <div class="modal-overlay" id="customizeModal">
+        <div class="modal-dialog">
+            <h3>Customize Start Page</h3>
+
+            <div class="form-group" style="border-bottom: 1px solid var(--card-border); padding-bottom: 12px;">
+                <div class="setting-row">
+                    <span style="font-size: 13px; font-weight: 500;">Show Shortcuts on Start Page</span>
+                    <label class="switch">
+                        <input type="checkbox" id="shortcutsToggle" onchange="toggleShortcutsSetting(this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Preset Wallpapers</label>
+                <div class="wallpaper-grid" id="wallpaperGrid"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Custom Image File</label>
+                <div class="file-upload-row">
+                    <label class="file-upload-btn">
+                        Browse...
+                        <input type="file" id="customWallpaperFile" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                    </label>
+                    <span id="file-name-display">No file chosen</span>
+                </div>
+            </div>
+
+            <button class="close-modal-btn" onclick="closeCustomizeModal()">Done</button>
+        </div>
+    </div>
+
+    <script>
+        const wallpapers = [
+            { name: 'Earth', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1920&q=80' },
+            { name: 'Nebula', url: 'https://images.unsplash.com/photo-1538370965046-79c0d6907d47?auto=format&fit=crop&w=1920&q=80' },
+            { name: 'Cosmic Aurora', url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1920&q=80' }
+        ];
+
+        let shortcuts = JSON.parse(localStorage.getItem('nixus_shortcuts')) || [
+            { name: 'Google', url: 'https://www.google.com' },
+            { name: 'YouTube', url: 'https://www.youtube.com' },
+            { name: 'GitHub', url: 'https://github.com' },
+            { name: 'Reddit', url: 'https://www.reddit.com' }
+        ];
+
+        let editingIndex = -1;
+        let selectedWallpaperUrl = localStorage.getItem('nixus_wallpaper') || wallpapers[0].url;
+        let pendingCustomWallpaperData = null;
+        let activeBgLayer = 'A';
+
+        function initHome() {
+            const isDark = localStorage.getItem('browser_dark_mode') !== 'false';
+            if (!isDark) document.body.classList.add('light-mode');
+
+            const savedAccent = localStorage.getItem('browser_accent') || '#007acc';
+            document.documentElement.style.setProperty('--accent-color', savedAccent);
+
+            if (selectedWallpaperUrl) {
+                applyWallpaper(selectedWallpaperUrl);
+            }
+
+            const showShortcuts = localStorage.getItem('nixus_show_shortcuts') !== 'false';
+            document.getElementById('shortcutsToggle').checked = showShortcuts;
+            applyShortcutsVisibility(showShortcuts);
+
+            renderShortcuts();
+            renderWallpaperGrid();
+
+            window.onclick = function(e) {
+                if (!e.target.matches('.shortcut-menu-btn')) {
+                    document.querySelectorAll('.shortcut-dropdown').forEach(d => d.classList.remove('show'));
+                }
+            }
+        }
+
+        function renderShortcuts() {
+            const grid = document.getElementById('shortcutsGrid');
+            grid.innerHTML = '';
+
+            shortcuts.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'shortcut-card';
+                card.onclick = () => { window.location.href = item.url; };
+
+                const initial = item.name ? item.name.charAt(0).toUpperCase() : 'N';
+
+                card.innerHTML = `
+                    <button class="shortcut-menu-btn" onclick="toggleMenu(event, ${index})">⋮</button>
+                    <div class="shortcut-dropdown" id="dropdown-${index}">
+                        <button class="dropdown-item" onclick="openEditModal(event, ${index})">Edit</button>
+                        <button class="dropdown-item" onclick="deleteShortcut(event, ${index})">Delete</button>
+                    </div>
+                    <div class="shortcut-icon">${initial}</div>
+                    <span class="shortcut-title">${item.name}</span>
+                `;
+                grid.appendChild(card);
+            });
+
+            const addCard = document.createElement('div');
+            addCard.className = 'add-card';
+            addCard.onclick = () => openAddModal();
+            addCard.innerHTML = `
+                <div class="add-icon-circle">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </div>
+                <span class="shortcut-title" style="color:var(--subtext-color);">Add Shortcut</span>
+            `;
+            grid.appendChild(addCard);
+        }
+
+        function renderWallpaperGrid() {
+            const grid = document.getElementById('wallpaperGrid');
+            grid.innerHTML = '';
+            wallpapers.forEach(wp => {
+                const opt = document.createElement('div');
+                opt.className = `wallpaper-option ${selectedWallpaperUrl === wp.url ? 'active' : ''}`;
+                opt.style.backgroundImage = `url('${wp.url}')`;
+                opt.onclick = () => {
+                    selectedWallpaperUrl = wp.url;
+                    pendingCustomWallpaperData = null;
+                    document.getElementById('file-name-display').innerText = 'No file chosen';
+                    renderWallpaperGrid();
+                    applyWallpaper(selectedWallpaperUrl);
+                };
+                grid.appendChild(opt);
+            });
+        }
+
+        function toggleMenu(e, index) {
+            e.stopPropagation();
+            document.querySelectorAll('.shortcut-dropdown').forEach((d, idx) => {
+                if (idx !== index) d.classList.remove('show');
+            });
+            const dropdown = document.getElementById(`dropdown-${index}`);
+            dropdown.classList.toggle('show');
+        }
+
+        function openAddModal() {
+            editingIndex = -1;
+            document.getElementById('modalTitle').innerText = 'Add Shortcut';
+            document.getElementById('shortcutNameInput').value = '';
+            document.getElementById('shortcutUrlInput').value = '';
+            document.getElementById('shortcutModal').classList.add('open');
+        }
+
+        function openEditModal(e, index) {
+            e.stopPropagation();
+            editingIndex = index;
+            document.getElementById('modalTitle').innerText = 'Edit Shortcut';
+            document.getElementById('shortcutNameInput').value = shortcuts[index].name;
+            document.getElementById('shortcutUrlInput').value = shortcuts[index].url;
+            document.getElementById('shortcutModal').classList.add('open');
+        }
+
+        function closeShortcutModal() {
+            document.getElementById('shortcutModal').classList.remove('open');
+        }
+
+        function saveShortcut() {
+            let name = document.getElementById('shortcutNameInput').value.trim();
+            let url = document.getElementById('shortcutUrlInput').value.trim();
+            if (!name || !url) return;
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            if (editingIndex >= 0) {
+                shortcuts[editingIndex] = { name, url };
+            } else {
+                shortcuts.push({ name, url });
+            }
+
+            localStorage.setItem('nixus_shortcuts', JSON.stringify(shortcuts));
+            closeShortcutModal();
+            renderShortcuts();
+        }
+
+        function deleteShortcut(e, index) {
+            e.stopPropagation();
+            shortcuts.splice(index, 1);
+            localStorage.setItem('nixus_shortcuts', JSON.stringify(shortcuts));
+            renderShortcuts();
+        }
+
+        function openCustomizeModal() {
+            pendingCustomWallpaperData = null;
+            document.getElementById('file-name-display').innerText = 'No file chosen';
+            document.getElementById('customizeModal').classList.add('open');
+        }
+
+        function closeCustomizeModal() {
+            if (pendingCustomWallpaperData) {
+                selectedWallpaperUrl = pendingCustomWallpaperData;
+            }
+            
+            localStorage.setItem('nixus_wallpaper', selectedWallpaperUrl);
+            applyWallpaper(selectedWallpaperUrl);
+            document.getElementById('customizeModal').classList.remove('open');
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('file-name-display').innerText = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                pendingCustomWallpaperData = e.target.result;
+                document.querySelectorAll('.wallpaper-option').forEach(el => el.classList.remove('active'));
+                applyWallpaper(pendingCustomWallpaperData);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function toggleShortcutsSetting(checkbox) {
+            const show = checkbox.checked;
+            localStorage.setItem('nixus_show_shortcuts', show);
+            applyShortcutsVisibility(show);
+        }
+
+        function applyShortcutsVisibility(show) {
+            const grid = document.getElementById('shortcutsGrid');
+            if (show) {
+                grid.classList.remove('hidden');
+            } else {
+                grid.classList.add('hidden');
+            }
+        }
+
+        function detectWallpaperLuminance(imgUrl) {
+            if (!imgUrl) return;
+
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = imgUrl;
+
+            img.onload = function() {
+                const canvas = document.getElementById('luminanceCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 50;
+                canvas.height = 50;
+                ctx.drawImage(img, 0, 0, 50, 50);
+
+                const imgData = ctx.getImageData(0, 0, 50, 50).data;
+                let colorSum = 0;
+
+                for (let i = 0; i < imgData.length; i += 4) {
+                    const r = imgData[i];
+                    const g = imgData[i+1];
+                    const b = imgData[i+2];
+                    colorSum += (0.299 * r + 0.587 * g + 0.114 * b);
+                }
+
+                const avgLuminance = colorSum / (imgData.length / 4);
+
+                if (avgLuminance > 130) {
+                    document.body.classList.add('auto-light-theme');
+                } else {
+                    document.body.classList.remove('auto-light-theme');
+                }
+            };
+        }
+
+        function applyWallpaper(url) {
+            const layerA = document.getElementById('bgLayerA');
+            const layerB = document.getElementById('bgLayerB');
+
+            if (activeBgLayer === 'A') {
+                layerB.style.backgroundImage = `url('${url}')`;
+                layerB.classList.add('active');
+                layerA.classList.remove('active');
+                activeBgLayer = 'B';
+            } else {
+                layerA.style.backgroundImage = `url('${url}')`;
+                layerA.classList.add('active');
+                layerB.classList.remove('active');
+                activeBgLayer = 'A';
+            }
+
+            document.body.classList.add('has-wallpaper');
+            detectWallpaperLuminance(url);
+        }
+
+        function handleSearchKey(e) {
+            if (e.key === 'Enter') {
+                let val = e.target.value.trim();
+                if (!val) return;
+                let targetURL = val;
+                if (!val.startsWith('http://') && !val.startsWith('https://')) {
+                    if (val.includes('.') && !val.includes(' ')) {
+                        targetURL = 'https://' + val;
+                    } else {
+                        targetURL = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
+                    }
+                }
+                window.location.href = targetURL;
+            }
+        }
+
+        initHome();
+    </script>
+</body>
+</html>
